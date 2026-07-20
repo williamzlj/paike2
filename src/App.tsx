@@ -1,16 +1,18 @@
 import FilterBar from './components/FilterBar';
 import Header from './components/Header';
 import ScheduleTable from './components/ScheduleTable';
+import NotePanel from './components/NotePanel';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-white">
       <FilterBar />
-      <div id="schedule-export-area" className="bg-white">
+      <div id="schedule-export-area" className="bg-white w-fit mx-auto py-6" style={{ fontFamily: '"Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif' }}>
         <Header />
-        <main className="py-6">
+        <main className="pt-1 pb-6">
           <ScheduleTable />
         </main>
+        <NotePanel />
       </div>
     </div>
   );

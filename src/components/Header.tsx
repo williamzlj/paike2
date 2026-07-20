@@ -20,7 +20,7 @@ const Header = () => {
   };
 
   return (
-    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 px-6 py-4">
+    <div className="bg-white px-6 py-4">
       <div className="flex flex-col items-center gap-2">
         <div className="text-center w-full">
           {isEditingTitle ? (

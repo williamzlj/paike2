@@ -85,7 +85,7 @@ const ScheduleTable = () => {
                         return (
                           <tr key={slot.id}>
                             <td 
-                              className={`px-4 ${slot.isBreak ? '' : 'py-3'} font-medium text-center ${
+                              className={`px-4 ${slot.isBreak ? '' : 'py-0.5'} font-medium text-center ${
                                 slot.isBreak ? 'text-gray-500' : 'text-gray-600'
                               }`}
                               style={{ 
@@ -171,7 +171,7 @@ const ScheduleTable = () => {
                             className={slot.isBreak ? 'bg-gray-200' : 'hover:bg-gray-50'}
                           >
                             <td 
-                              className={`px-4 ${slot.isBreak ? 'py-0' : 'py-3'} font-medium text-center ${
+                              className={`px-4 ${slot.isBreak ? 'py-0' : 'py-0.5'} font-medium text-center ${
                                 slot.isBreak ? 'text-gray-500 bg-gray-200' : 'text-gray-600 bg-gray-50'
                               }`}
                               style={{ 

@@ -30,6 +30,7 @@ export const defaultTableSettings: TableSettings = {
 interface ScheduleStore {
   title: string;
   subtitle: string;
+  notes: string;
   date: string;
   timeSlots: TimeSlot[];
   classrooms: Classroom[];
@@ -43,6 +44,7 @@ interface ScheduleStore {
 
   setTitle: (title: string) => void;
   setSubtitle: (subtitle: string) => void;
+  setNotes: (notes: string) => void;
   setDate: (date: string) => void;
   addTimeSlot: (slot: TimeSlot) => void;
   removeTimeSlot: (id: string) => void;
@@ -83,6 +85,7 @@ export const useScheduleStore = create<ScheduleStore>()(
     (set, get) => ({
       title: defaultTitle,
       subtitle: '',
+      notes: '',
       date: new Date().toISOString().split('T')[0],
       timeSlots: defaultTimeSlots,
       classrooms: defaultClassrooms,
@@ -96,6 +99,7 @@ export const useScheduleStore = create<ScheduleStore>()(
 
       setTitle: (title) => set({ title }),
       setSubtitle: (subtitle) => set({ subtitle }),
+      setNotes: (notes) => set({ notes }),
       setDate: (date) => set({ date }),
 
       addTimeSlot: (slot) => set((state) => ({ timeSlots: [...state.timeSlots, slot] })),
@@ -245,6 +249,7 @@ export const useScheduleStore = create<ScheduleStore>()(
           data: {
             title: state.title,
             subtitle: state.subtitle,
+            notes: state.notes,
             date: state.date,
             timeSlots: state.timeSlots.map(slot => ({
               id: slot.id,
@@ -293,6 +298,7 @@ export const useScheduleStore = create<ScheduleStore>()(
             set({
               title: data.title || defaultTitle,
               subtitle: data.subtitle || '',
+              notes: data.notes || '',
               date: data.date || new Date().toISOString().split('T')[0],
               timeSlots: (data.timeSlots || defaultTimeSlots).map(slot => ({
                 id: slot.id,
@@ -342,6 +348,7 @@ export const useScheduleStore = create<ScheduleStore>()(
         const merged = { ...currentState, ...persistedState };
         
         merged.subtitle = persistedState.subtitle || currentState.subtitle;
+        merged.notes = persistedState.notes || currentState.notes;
         
         merged.colorConfig = {
           ...currentState.colorConfig,

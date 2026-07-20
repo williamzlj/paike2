@@ -32,7 +32,7 @@ const TableStyleSettings = () => {
           <label className="text-sm text-gray-600 w-24">单元格高度:</label>
           <input
             type="range"
-            min="20"
+            min="12"
             max="150"
             value={tableSettings.cellHeight}
             onChange={(e) => setTableSettings({ cellHeight: Number(e.target.value) })}

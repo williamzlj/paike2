@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas';
+import { snapdom } from '@zumer/snapdom';
 import * as XLSX from 'xlsx';
 import { useScheduleStore } from '../store/scheduleStore';
 
@@ -10,31 +10,19 @@ export const exportAsImage = async (elementId: string, fileName: string = 'sched
   }
 
   try {
-    const canvas = await html2canvas(element, {
-      backgroundColor: '#ffffff',
-      scale: window.devicePixelRatio,
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
-      ignoreElements: (el) => {
-        return el.tagName === 'BUTTON' || el.tagName === 'INPUT' || el.tagName === 'SELECT';
-      },
-      onclone: (clonedDoc) => {
-        const clonedElement = clonedDoc.getElementById(elementId);
-        if (clonedElement) {
-          clonedElement.querySelectorAll('td > div').forEach(div => {
-            const divEl = div as HTMLElement;
-            divEl.style.lineHeight = '1';
-          });
-        }
-      },
+    const result = await snapdom(element, {
+      scale: Math.min(window.devicePixelRatio, 3),
+      exclude: ['button', 'input', 'select'],
+      embedFonts: true,
     });
+    const blob = await result.toBlob({ type: 'png' });
     const link = document.createElement('a');
     link.download = fileName;
-    link.href = canvas.toDataURL('image/png');
+    link.href = URL.createObjectURL(blob);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
   } catch (error) {
     console.error('导出图片失败:', error);
     alert('导出图片失败，请重试');
