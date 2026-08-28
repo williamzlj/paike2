@@ -1,7 +1,7 @@
-import { Plus, Minus, Pencil, Check, X, Coffee, Palette, Settings2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Minus, Pencil, Check, X, Coffee, Palette, Settings2, Eye, EyeOff, FileText } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { useScheduleStore } from '../store/scheduleStore';
-import { TimeSlot, Classroom, DayType, ALL_DAYS } from '../types';
+import { TimeSlot, Classroom, DayType, ALL_DAYS, ALL_GRADES, SECONDARY_GRADES } from '../types';
 import { generateId } from '../utils/helpers';
 
 const TableStyleSettings = () => {
@@ -128,6 +128,58 @@ const TableStyleSettings = () => {
             className="flex-1"
           />
           <span className="text-sm text-gray-500 w-16">{tableSettings.breakFontSize}px</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-gray-600 w-24">主标题字体:</label>
+          <input
+            type="range"
+            min="16"
+            max="48"
+            value={tableSettings.titleFontSize}
+            onChange={(e) => setTableSettings({ titleFontSize: Number(e.target.value) })}
+            className="flex-1"
+          />
+          <span className="text-sm text-gray-500 w-16">{tableSettings.titleFontSize}px</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-gray-600 w-24">小标题字体:</label>
+          <input
+            type="range"
+            min="12"
+            max="32"
+            value={tableSettings.subtitleFontSize}
+            onChange={(e) => setTableSettings({ subtitleFontSize: Number(e.target.value) })}
+            className="flex-1"
+          />
+          <span className="text-sm text-gray-500 w-16">{tableSettings.subtitleFontSize}px</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-gray-600 w-24">日期标题字体:</label>
+          <input
+            type="range"
+            min="12"
+            max="32"
+            value={tableSettings.dayHeaderFontSize}
+            onChange={(e) => setTableSettings({ dayHeaderFontSize: Number(e.target.value) })}
+            className="flex-1"
+          />
+          <span className="text-sm text-gray-500 w-16">{tableSettings.dayHeaderFontSize}px</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-gray-600 w-24">表头字体:</label>
+          <input
+            type="range"
+            min="10"
+            max="24"
+            value={tableSettings.headerFontSize}
+            onChange={(e) => setTableSettings({ headerFontSize: Number(e.target.value) })}
+            className="flex-1"
+          />
+          <span className="text-sm text-gray-500 w-16">{tableSettings.headerFontSize}px</span>
         </div>
       </div>
     </div>
@@ -547,7 +599,8 @@ const SubjectManager = () => {
 };
 
 const ColorSettings = () => {
-  const { colorConfig, setGradeColor, setDayHeaderColor, setDayName } = useScheduleStore();
+  const { colorConfig, setGradeColor, setDayHeaderColor, setDayName, showElementary } = useScheduleStore();
+  const visibleGrades = showElementary ? ALL_GRADES : SECONDARY_GRADES;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -595,18 +648,118 @@ const ColorSettings = () => {
         <div>
           <h4 className="text-sm font-medium text-gray-600 mb-2">年级背景色</h4>
           <div className="grid grid-cols-2 gap-2">
-            {Object.entries(colorConfig.gradeColors).map(([grade, color]) => (
+            {visibleGrades.map((grade) => (
               <div key={grade} className="flex items-center gap-2">
                 <span className="text-sm text-gray-700 flex-1">{grade}</span>
                 <input
                   type="color"
-                  value={color}
-                  onChange={(e) => setGradeColor(grade as any, e.target.value)}
+                  value={colorConfig.gradeColors[grade]}
+                  onChange={(e) => setGradeColor(grade, e.target.value)}
                   className="w-8 h-8 rounded cursor-pointer border border-gray-300"
                 />
               </div>
             ))}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const BackendNotesSettings = () => {
+  const { backendNotes, setBackendNotes } = useScheduleStore();
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        <FileText size={18} />
+        后台备注
+        <span className="text-xs text-gray-400 font-normal">（仅在设置中显示，不导出）</span>
+      </h3>
+      
+      <textarea
+        value={backendNotes}
+        onChange={(e) => setBackendNotes(e.target.value)}
+        placeholder="在此处添加仅供内部查看的备注信息，不会显示在排课表中..."
+        className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      
+      <div className="mt-2 text-xs text-gray-400">
+        {backendNotes.length} 字符
+      </div>
+    </div>
+  );
+};
+
+const GeneralSettings = () => {
+  const { showWeekdays, toggleShowWeekdays, showElementary, toggleShowElementary, showNotes, toggleShowNotes } = useScheduleStore();
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        <Settings2 size={18} />
+        通用设置
+      </h3>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-sm text-gray-700">显示周一到周四排课</span>
+            <p className="text-xs text-gray-400 mt-0.5">正常情况下不需要开启</p>
+          </div>
+          <button
+            onClick={toggleShowWeekdays}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              showWeekdays ? 'bg-amber-500' : 'bg-gray-300'
+            }`}
+            title={showWeekdays ? '点击关闭' : '点击开启'}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                showWeekdays ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-sm text-gray-700">显示小学年级</span>
+            <p className="text-xs text-gray-400 mt-0.5">正常情况下不需要开启</p>
+          </div>
+          <button
+            onClick={toggleShowElementary}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              showElementary ? 'bg-amber-500' : 'bg-gray-300'
+            }`}
+            title={showElementary ? '点击关闭' : '点击开启'}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                showElementary ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-sm text-gray-700">显示备注说明</span>
+            <p className="text-xs text-gray-400 mt-0.5">关闭后截图不包含备注</p>
+          </div>
+          <button
+            onClick={toggleShowNotes}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              showNotes ? 'bg-amber-500' : 'bg-gray-300'
+            }`}
+            title={showNotes ? '点击关闭' : '点击开启'}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                showNotes ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
         </div>
       </div>
     </div>
@@ -635,11 +788,13 @@ const SettingsPanel = ({ isOpen, onClose }: SettingsPanelProps) => {
         </div>
         
         <div className="p-4 space-y-4">
+          <GeneralSettings />
           <TableStyleSettings />
           <TimeSlotManager />
           <ClassroomManager />
           <SubjectManager />
           <ColorSettings />
+          <BackendNotesSettings />
         </div>
       </div>
     </div>

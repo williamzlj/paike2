@@ -1,6 +1,6 @@
-import { RotateCw, Eye, EyeOff, Settings, Download, Upload, Image, FileSpreadsheet } from 'lucide-react';
+import { RotateCw, Eye, EyeOff, Settings, Download, Upload, Image, FileSpreadsheet, Tag, Palette } from 'lucide-react';
 import { useState, useRef } from 'react';
-import { DayType, Grade, Subject, ALL_DAYS, ALL_GRADES } from '../types';
+import { DayType, Grade, Subject, ALL_DAYS, ALL_GRADES, WEEKEND_DAYS, SECONDARY_GRADES } from '../types';
 import { useScheduleStore } from '../store/scheduleStore';
 import { exportAsImage, exportAsExcel, exportSettingsToFile, importSettingsFromFile } from '../utils/exportUtils';
 import SettingsPanel from './SettingsPanel';
@@ -11,7 +11,12 @@ const FilterBar = () => {
     subjects,
     title,
     hidePlaceholders,
-    toggleDayFilter, 
+    showCustomCourses,
+    dimFilteredCourses,
+    verticalLayout,
+    showWeekdays,
+    showElementary,
+    toggleDayFilter,
     toggleGradeFilter, 
     toggleSubjectFilter, 
     selectAllDays,
@@ -21,14 +26,19 @@ const FilterBar = () => {
     clearGradesFilter,
     clearSubjectsFilter,
     resetFilters,
-    toggleHidePlaceholders
+    toggleHidePlaceholders,
+    toggleShowCustomCourses,
+    toggleDimFilteredCourses,
+    toggleVerticalLayout
   } = useScheduleStore();
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isAllDaysSelected = filters.days.length === ALL_DAYS.length;
-  const isAllGradesSelected = filters.grades.length === ALL_GRADES.length;
+  const availableDays = showWeekdays ? ALL_DAYS : WEEKEND_DAYS;
+  const isAllDaysSelected = availableDays.every((day) => filters.days.includes(day));
+  const availableGrades = showElementary ? ALL_GRADES : SECONDARY_GRADES;
+  const isAllGradesSelected = availableGrades.every((grade) => filters.grades.includes(grade));
   const isAllSubjectsSelected = filters.subjects.length === subjects.length && subjects.length > 0;
 
   const handleExportImage = () => {
@@ -67,7 +77,7 @@ const FilterBar = () => {
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-gray-700">日期:</span>
             <div className="flex gap-1">
-              {ALL_DAYS.map((day: DayType) => (
+              {availableDays.map((day: DayType) => (
                 <button
                   key={day}
                   onClick={() => toggleDayFilter(day)}
@@ -103,7 +113,7 @@ const FilterBar = () => {
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-gray-700">年级:</span>
             <div className="flex flex-wrap gap-1">
-              {ALL_GRADES.map((grade: Grade) => (
+              {availableGrades.map((grade: Grade) => (
                 <button
                   key={grade}
                   onClick={() => toggleGradeFilter(grade)}
@@ -136,7 +146,7 @@ const FilterBar = () => {
 
           <div className="h-6 w-px bg-gray-300 hidden md:block" />
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <span className="text-sm font-semibold text-gray-700">科目:</span>
             <div className="flex gap-1 flex-wrap">
               {subjects.map((subject: Subject) => (
@@ -168,12 +178,20 @@ const FilterBar = () => {
                 全选
               </button>
             )}
+
+            <button
+              onClick={resetFilters}
+              className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <RotateCw size={14} />
+              
+            </button>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-1">
             <button
               onClick={handleExportImage}
-              className="flex items-center gap-1 px-3 py-1 text-sm text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-lg transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-sm text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-lg transition-colors"
               title="导出图片"
             >
               <Image size={16} />
@@ -181,7 +199,7 @@ const FilterBar = () => {
             </button>
             <button
               onClick={handleExportExcel}
-              className="flex items-center gap-1 px-3 py-1 text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
               title="导出Excel"
             >
               <FileSpreadsheet size={16} />
@@ -189,7 +207,7 @@ const FilterBar = () => {
             </button>
             <button
               onClick={handleExportSettings}
-              className="flex items-center gap-1 px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
               title="导出设置"
             >
               <Download size={16} />
@@ -197,7 +215,7 @@ const FilterBar = () => {
             </button>
             <button
               onClick={handleImportSettings}
-              className="flex items-center gap-1 px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
               title="导入设置"
             >
               <Upload size={16} />
@@ -221,14 +239,44 @@ const FilterBar = () => {
               title={hidePlaceholders ? '显示"点击添加"提示' : '隐藏"点击添加"提示'}
             >
               {hidePlaceholders ? <EyeOff size={16} /> : <Eye size={16} />}
+            显示提示文字</button>
+            <button
+              onClick={toggleShowCustomCourses}
+              className={`flex items-center gap-1 px-3 py-1 text-sm rounded-lg transition-colors ${
+                showCustomCourses 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+              title={showCustomCourses ? '隐藏自定义课程' : '显示自定义课程'}
+            >
+              <Tag size={14} />
+              <span className="hidden sm:inline">显示自定义课程</span>
             </button>
             <button
-              onClick={resetFilters}
-              className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={toggleDimFilteredCourses}
+              className={`flex items-center gap-1 px-3 py-1 text-sm rounded-lg transition-colors ${
+                dimFilteredCourses 
+                  ? 'bg-purple-500 text-white' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+              title={dimFilteredCourses ? '隐藏筛选课程' : '筛选课程深灰色显示'}
             >
-              <RotateCw size={14} />
-              重置
+              <Palette size={14} />
+              <span className="hidden sm:inline">深灰显示非筛选课程</span>
             </button>
+            <button
+              onClick={toggleVerticalLayout}
+              className={`flex items-center gap-1 px-3 py-1 text-sm rounded-lg transition-colors ${
+                verticalLayout 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+              title={verticalLayout ? '切换为横向排列' : '切换为纵向排列'}
+            >
+              <span className="text-base leading-none">{verticalLayout ? '⬇' : '⬅'}</span>
+              <span className="hidden sm:inline">{verticalLayout ? '竖排' : '横排'}</span>
+            </button>
+            
             <button
               onClick={() => setIsSettingsOpen(true)}
               className="flex items-center gap-1 px-3 py-1 text-sm bg-amber-500 text-white hover:bg-amber-600 rounded-lg transition-colors"

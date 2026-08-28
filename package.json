@@ -20,7 +20,6 @@
     "@tiptap/extension-underline": "^3.28.0",
     "@tiptap/react": "^3.28.0",
     "@tiptap/starter-kit": "^3.28.0",
-    "@zumer/snapdom": "^2.16.0",
     "clsx": "^2.1.1",
     "dom-to-image-more": "^3.10.2",
     "lucide-react": "^0.511.0",

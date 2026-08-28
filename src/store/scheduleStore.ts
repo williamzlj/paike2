@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Course, TimeSlot, Classroom, ColorConfig, Filters, DayType, Grade, Subject, ALL_DAYS, ALL_GRADES } from '../types';
+import { Course, TimeSlot, Classroom, ColorConfig, Filters, DayType, Grade, Subject, ALL_DAYS, ALL_GRADES, WEEKDAY_DAYS, WEEKEND_DAYS, ELEMENTARY_GRADES, SECONDARY_GRADES } from '../types';
 import { defaultTimeSlots, defaultClassrooms, defaultColorConfig, defaultFilters, defaultTitle, defaultSubjects } from '../data/defaultData';
 
 export interface TableSettings {
@@ -13,6 +13,10 @@ export interface TableSettings {
   timeFontSize: number;
   contentFontSize: number;
   breakFontSize: number;
+  titleFontSize: number;
+  subtitleFontSize: number;
+  dayHeaderFontSize: number;
+  headerFontSize: number;
 }
 
 export const defaultTableSettings: TableSettings = {
@@ -25,12 +29,17 @@ export const defaultTableSettings: TableSettings = {
   timeFontSize: 14,
   contentFontSize: 14,
   breakFontSize: 10,
+  titleFontSize: 28,
+  subtitleFontSize: 20,
+  dayHeaderFontSize: 20,
+  headerFontSize: 16,
 };
 
 interface ScheduleStore {
   title: string;
   subtitle: string;
   notes: string;
+  backendNotes: string;
   date: string;
   timeSlots: TimeSlot[];
   classrooms: Classroom[];
@@ -39,12 +48,22 @@ interface ScheduleStore {
   colorConfig: ColorConfig;
   filters: Filters;
   hidePlaceholders: boolean;
+  showCustomCourses: boolean;
+  dimFilteredCourses: boolean;
+  verticalLayout: boolean;
+  showWeekdays: boolean;
+  showElementary: boolean;
+  showNotes: boolean;
+  hiddenSlotsByDay: Record<DayType, string[]>;
+  customSlotTimes: Record<DayType, Record<string, { startTime: string; endTime: string }>>;
+  customSlotColors: Record<DayType, Record<string, { bgColor?: string; textColor?: string }>>;
   tableSettings: TableSettings;
   editingCourse: Course | null;
 
   setTitle: (title: string) => void;
   setSubtitle: (subtitle: string) => void;
   setNotes: (notes: string) => void;
+  setBackendNotes: (backendNotes: string) => void;
   setDate: (date: string) => void;
   addTimeSlot: (slot: TimeSlot) => void;
   removeTimeSlot: (id: string) => void;
@@ -57,6 +76,9 @@ interface ScheduleStore {
   updateClassroom: (classroom: Classroom) => void;
   updateCourse: (course: Course) => void;
   clearCourse: (dayType: DayType, timeSlotId: string, classroomId: string) => void;
+  setCourseCustomBgColor: (dayType: DayType, timeSlotId: string, classroomId: string, color: string) => void;
+  setCourseCustomTextColor: (dayType: DayType, timeSlotId: string, classroomId: string, color: string) => void;
+  clearCourseCustomColors: (dayType: DayType, timeSlotId: string, classroomId: string) => void;
   setEditingCourse: (course: Course | null) => void;
   setGradeColor: (grade: Grade, color: string) => void;
   setSubjectColor: (subject: Subject, color: string) => void;
@@ -65,6 +87,18 @@ interface ScheduleStore {
   addSubject: (subject: string) => void;
   removeSubject: (subject: string) => void;
   toggleHidePlaceholders: () => void;
+  toggleShowCustomCourses: () => void;
+  toggleDimFilteredCourses: () => void;
+  toggleVerticalLayout: () => void;
+  toggleShowWeekdays: () => void;
+  toggleShowElementary: () => void;
+  toggleShowNotes: () => void;
+  toggleSlotVisibility: (day: DayType, slotId: string) => void;
+  setDayHiddenSlots: (day: DayType, slotIds: string[]) => void;
+  setSlotCustomTime: (day: DayType, slotId: string, startTime: string, endTime: string) => void;
+  clearSlotCustomTime: (day: DayType, slotId: string) => void;
+  setSlotCustomColor: (day: DayType, slotId: string, bgColor?: string, textColor?: string) => void;
+  clearSlotCustomColor: (day: DayType, slotId: string) => void;
   toggleDayFilter: (day: DayType) => void;
   toggleGradeFilter: (grade: Grade) => void;
   toggleSubjectFilter: (subject: Subject) => void;
@@ -86,6 +120,7 @@ export const useScheduleStore = create<ScheduleStore>()(
       title: defaultTitle,
       subtitle: '',
       notes: '',
+      backendNotes: '',
       date: new Date().toISOString().split('T')[0],
       timeSlots: defaultTimeSlots,
       classrooms: defaultClassrooms,
@@ -94,12 +129,22 @@ export const useScheduleStore = create<ScheduleStore>()(
       colorConfig: defaultColorConfig,
       filters: defaultFilters,
       hidePlaceholders: false,
+      showCustomCourses: true,
+      dimFilteredCourses: false,
+      verticalLayout: false,
+      showWeekdays: false,
+      showElementary: false,
+      showNotes: true,
+      hiddenSlotsByDay: { '周一': [], '周二': [], '周三': [], '周四': [], '周五': [], '周六': [], '周日': [] },
+      customSlotTimes: { '周一': {}, '周二': {}, '周三': {}, '周四': {}, '周五': {}, '周六': {}, '周日': {} },
+      customSlotColors: { '周一': {}, '周二': {}, '周三': {}, '周四': {}, '周五': {}, '周六': {}, '周日': {} },
       tableSettings: defaultTableSettings,
       editingCourse: null,
 
       setTitle: (title) => set({ title }),
       setSubtitle: (subtitle) => set({ subtitle }),
       setNotes: (notes) => set({ notes }),
+      setBackendNotes: (backendNotes) => set({ backendNotes }),
       setDate: (date) => set({ date }),
 
       addTimeSlot: (slot) => set((state) => ({ timeSlots: [...state.timeSlots, slot] })),
@@ -148,6 +193,30 @@ export const useScheduleStore = create<ScheduleStore>()(
           (c) => !(c.dayType === dayType && c.timeSlotId === timeSlotId && c.classroomId === classroomId)
         ),
         editingCourse: null,
+      })),
+
+      setCourseCustomBgColor: (dayType, timeSlotId, classroomId, color) => set((state) => ({
+        courses: state.courses.map((c) =>
+          c.dayType === dayType && c.timeSlotId === timeSlotId && c.classroomId === classroomId
+            ? { ...c, customBgColor: color }
+            : c
+        ),
+      })),
+
+      setCourseCustomTextColor: (dayType, timeSlotId, classroomId, color) => set((state) => ({
+        courses: state.courses.map((c) =>
+          c.dayType === dayType && c.timeSlotId === timeSlotId && c.classroomId === classroomId
+            ? { ...c, customTextColor: color }
+            : c
+        ),
+      })),
+
+      clearCourseCustomColors: (dayType, timeSlotId, classroomId) => set((state) => ({
+        courses: state.courses.map((c) =>
+          c.dayType === dayType && c.timeSlotId === timeSlotId && c.classroomId === classroomId
+            ? { ...c, customBgColor: undefined, customTextColor: undefined }
+            : c
+        ),
       })),
 
       setEditingCourse: (course) => set({ editingCourse: course }),
@@ -200,6 +269,92 @@ export const useScheduleStore = create<ScheduleStore>()(
 
       toggleHidePlaceholders: () => set((state) => ({ hidePlaceholders: !state.hidePlaceholders })),
 
+      toggleShowCustomCourses: () => set((state) => ({ showCustomCourses: !state.showCustomCourses })),
+
+      toggleDimFilteredCourses: () => set((state) => ({ dimFilteredCourses: !state.dimFilteredCourses })),
+
+      toggleVerticalLayout: () => set((state) => ({ verticalLayout: !state.verticalLayout })),
+
+      toggleShowWeekdays: () => set((state) => {
+        const newShowWeekdays = !state.showWeekdays;
+        let days = state.filters.days;
+        if (!newShowWeekdays) {
+          days = days.filter((d) => !WEEKDAY_DAYS.includes(d));
+        }
+        return { showWeekdays: newShowWeekdays, filters: { ...state.filters, days } };
+      }),
+
+      toggleShowElementary: () => set((state) => {
+        const newShowElementary = !state.showElementary;
+        let grades = state.filters.grades;
+        if (!newShowElementary) {
+          grades = grades.filter((g) => !ELEMENTARY_GRADES.includes(g));
+        }
+        return { showElementary: newShowElementary, filters: { ...state.filters, grades } };
+      }),
+
+      toggleShowNotes: () => set((state) => ({ showNotes: !state.showNotes })),
+
+      toggleSlotVisibility: (day, slotId) => set((state) => {
+        const current = state.hiddenSlotsByDay[day] || [];
+        const isHidden = current.includes(slotId);
+        return {
+          hiddenSlotsByDay: {
+            ...state.hiddenSlotsByDay,
+            [day]: isHidden ? current.filter(id => id !== slotId) : [...current, slotId],
+          },
+        };
+      }),
+
+      setDayHiddenSlots: (day, slotIds) => set((state) => ({
+        hiddenSlotsByDay: {
+          ...state.hiddenSlotsByDay,
+          [day]: slotIds,
+        },
+      })),
+
+      setSlotCustomTime: (day, slotId, startTime, endTime) => set((state) => ({
+        customSlotTimes: {
+          ...state.customSlotTimes,
+          [day]: {
+            ...state.customSlotTimes[day],
+            [slotId]: { startTime, endTime },
+          },
+        },
+      })),
+
+      clearSlotCustomTime: (day, slotId) => set((state) => {
+        const dayTimes = { ...state.customSlotTimes[day] };
+        delete dayTimes[slotId];
+        return {
+          customSlotTimes: {
+            ...state.customSlotTimes,
+            [day]: dayTimes,
+          },
+        };
+      }),
+
+      setSlotCustomColor: (day, slotId, bgColor, textColor) => set((state) => ({
+        customSlotColors: {
+          ...state.customSlotColors,
+          [day]: {
+            ...state.customSlotColors[day],
+            [slotId]: { bgColor, textColor },
+          },
+        },
+      })),
+
+      clearSlotCustomColor: (day, slotId) => set((state) => {
+        const dayColors = { ...state.customSlotColors[day] };
+        delete dayColors[slotId];
+        return {
+          customSlotColors: {
+            ...state.customSlotColors,
+            [day]: dayColors,
+          },
+        };
+      }),
+
       toggleDayFilter: (day) => set((state) => {
         const days = state.filters.days.includes(day)
           ? state.filters.days.filter((d) => d !== day)
@@ -221,8 +376,8 @@ export const useScheduleStore = create<ScheduleStore>()(
         return { filters: { ...state.filters, subjects } };
       }),
 
-      selectAllDays: () => set((state) => ({ filters: { ...state.filters, days: [...ALL_DAYS] } })),
-      selectAllGrades: () => set((state) => ({ filters: { ...state.filters, grades: [...ALL_GRADES] } })),
+      selectAllDays: () => set((state) => ({ filters: { ...state.filters, days: state.showWeekdays ? [...ALL_DAYS] : [...WEEKEND_DAYS] } })),
+      selectAllGrades: () => set((state) => ({ filters: { ...state.filters, grades: state.showElementary ? [...ALL_GRADES] : [...SECONDARY_GRADES] } })),
       selectAllSubjects: () => set((state) => ({ filters: { ...state.filters, subjects: [...state.subjects] } })),
 
       clearDaysFilter: () => set((state) => ({ filters: { ...state.filters, days: [] } })),
@@ -231,8 +386,8 @@ export const useScheduleStore = create<ScheduleStore>()(
 
       resetFilters: () => set((state) => ({
         filters: {
-          days: [...ALL_DAYS],
-          grades: [...ALL_GRADES],
+          days: state.showWeekdays ? [...ALL_DAYS] : [...WEEKEND_DAYS],
+          grades: state.showElementary ? [...ALL_GRADES] : [...SECONDARY_GRADES],
           subjects: [...state.subjects],
         },
       })),
@@ -250,6 +405,7 @@ export const useScheduleStore = create<ScheduleStore>()(
             title: state.title,
             subtitle: state.subtitle,
             notes: state.notes,
+            backendNotes: state.backendNotes,
             date: state.date,
             timeSlots: state.timeSlots.map(slot => ({
               id: slot.id,
@@ -270,6 +426,8 @@ export const useScheduleStore = create<ScheduleStore>()(
               grade: course.grade,
               subject: course.subject,
               customText: course.customText || '',
+              customBgColor: course.customBgColor || undefined,
+              customTextColor: course.customTextColor || undefined,
             })),
             subjects: [...state.subjects],
             colorConfig: {
@@ -280,6 +438,15 @@ export const useScheduleStore = create<ScheduleStore>()(
             },
             tableSettings: { ...defaultTableSettings, ...state.tableSettings },
             hidePlaceholders: state.hidePlaceholders,
+            showCustomCourses: state.showCustomCourses,
+            dimFilteredCourses: state.dimFilteredCourses,
+            verticalLayout: state.verticalLayout,
+            showWeekdays: state.showWeekdays,
+            showElementary: state.showElementary,
+            showNotes: state.showNotes,
+            hiddenSlotsByDay: { ...state.hiddenSlotsByDay },
+            customSlotTimes: JSON.parse(JSON.stringify(state.customSlotTimes)),
+            customSlotColors: JSON.parse(JSON.stringify(state.customSlotColors)),
             filters: {
               days: [...state.filters.days],
               grades: [...state.filters.grades],
@@ -299,6 +466,7 @@ export const useScheduleStore = create<ScheduleStore>()(
               title: data.title || defaultTitle,
               subtitle: data.subtitle || '',
               notes: data.notes || '',
+              backendNotes: data.backendNotes || '',
               date: data.date || new Date().toISOString().split('T')[0],
               timeSlots: (data.timeSlots || defaultTimeSlots).map(slot => ({
                 id: slot.id,
@@ -319,6 +487,8 @@ export const useScheduleStore = create<ScheduleStore>()(
                 grade: course.grade,
                 subject: course.subject,
                 customText: course.customText || '',
+                customBgColor: course.customBgColor || undefined,
+                customTextColor: course.customTextColor || undefined,
               })),
               subjects: data.subjects || defaultSubjects,
               colorConfig: {
@@ -329,6 +499,15 @@ export const useScheduleStore = create<ScheduleStore>()(
               },
               tableSettings: { ...defaultTableSettings, ...(data.tableSettings || {}) },
               hidePlaceholders: data.hidePlaceholders ?? false,
+              showCustomCourses: data.showCustomCourses ?? true,
+              dimFilteredCourses: data.dimFilteredCourses ?? false,
+              verticalLayout: data.verticalLayout ?? false,
+              showWeekdays: data.showWeekdays ?? false,
+              showElementary: data.showElementary ?? false,
+              showNotes: data.showNotes ?? true,
+              hiddenSlotsByDay: data.hiddenSlotsByDay || { '周一': [], '周二': [], '周三': [], '周四': [], '周五': [], '周六': [], '周日': [] },
+              customSlotTimes: data.customSlotTimes || { '周一': {}, '周二': {}, '周三': {}, '周四': {}, '周五': {}, '周六': {}, '周日': {} },
+              customSlotColors: data.customSlotColors || { '周一': {}, '周二': {}, '周三': {}, '周四': {}, '周五': {}, '周六': {}, '周日': {} },
               filters: {
                 days: (data.filters?.days || defaultFilters.days),
                 grades: (data.filters?.grades || defaultFilters.grades),
@@ -353,6 +532,10 @@ export const useScheduleStore = create<ScheduleStore>()(
         merged.colorConfig = {
           ...currentState.colorConfig,
           ...persistedState.colorConfig,
+          gradeColors: {
+            ...currentState.colorConfig.gradeColors,
+            ...(persistedState.colorConfig?.gradeColors || {}),
+          },
           dayHeaderColors: {
             ...currentState.colorConfig.dayHeaderColors,
             ...(persistedState.colorConfig?.dayHeaderColors || {}),

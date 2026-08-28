@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
@@ -28,7 +27,6 @@ const NoteEditor = ({ initialContent, onSave, onClose }: NoteEditorProps) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: false }),
-      Underline,
       TextAlign.configure({ types: ['paragraph', 'list_item'] }),
       TextStyle,
       Color,
@@ -112,12 +110,12 @@ const NoteEditor = ({ initialContent, onSave, onClose }: NoteEditorProps) => {
               <Type size={18} />
             </button>
             {showColorPicker && (
-              <div className="absolute top-full left-0 mt-1 p-2 bg-white rounded-lg shadow-lg border border-gray-200 grid grid-cols-5 gap-1 z-10">
+              <div className="absolute top-full left-0 mt-1 p-3 bg-white rounded-lg shadow-lg border border-gray-200 flex flex-wrap gap-2 w-48 z-10">
                 {colors.map((color) => (
                   <button
                     key={color}
                     onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().setColor(color).run(); setShowColorPicker(false); }}
-                    className="w-6 h-6 rounded border border-gray-300 hover:scale-110 transition-transform"
+                    className="w-7 h-7 rounded border border-gray-300"
                     style={{ backgroundColor: color }}
                   />
                 ))}

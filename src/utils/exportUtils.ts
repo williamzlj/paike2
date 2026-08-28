@@ -1,7 +1,32 @@
-import { snapdom } from '@zumer/snapdom';
+import domToImage from 'dom-to-image-more';
 import * as XLSX from 'xlsx';
 import { useScheduleStore } from '../store/scheduleStore';
 
+/**
+ * 截图模式：导出前隐藏编辑按钮和占位提示，导出后恢复
+ */
+const withScreenshotMode = async <T>(fn: () => Promise<T>): Promise<T> => {
+  const originalHidePlaceholders = useScheduleStore.getState().hidePlaceholders;
+
+  // 开启截图模式：隐藏编辑按钮和占位提示
+  useScheduleStore.setState({ hidePlaceholders: true });
+
+  // 等待 DOM 重新渲染
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  try {
+    return await fn();
+  } finally {
+    // 恢复原状态
+    useScheduleStore.setState({ hidePlaceholders: originalHidePlaceholders });
+  }
+};
+
+/**
+ * 导出 PNG 图片
+ * 使用 dom-to-image-more（SVG foreignObject 方案）导出，复用浏览器渲染引擎，
+ * 文字位置与网页显示一致，无需手动偏移修正。
+ */
 export const exportAsImage = async (elementId: string, fileName: string = 'schedule.png') => {
   const element = document.getElementById(elementId);
   if (!element) {
@@ -9,24 +34,27 @@ export const exportAsImage = async (elementId: string, fileName: string = 'sched
     return;
   }
 
-  try {
-    const result = await snapdom(element, {
-      scale: Math.min(window.devicePixelRatio, 3),
-      exclude: ['button', 'input', 'select'],
-      embedFonts: true,
-    });
-    const blob = await result.toBlob({ type: 'png' });
-    const link = document.createElement('a');
-    link.download = fileName;
-    link.href = URL.createObjectURL(blob);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-  } catch (error) {
-    console.error('导出图片失败:', error);
-    alert('导出图片失败，请重试');
-  }
+  await withScreenshotMode(async () => {
+    try {
+      const dataUrl = await domToImage.toPng(element, {
+        bgcolor: '#ffffff',
+        scale: 2,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        style: {
+          transform: 'none',
+        },
+      });
+
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = dataUrl;
+      link.click();
+    } catch (error) {
+      console.error('导出图片失败:', error);
+      alert('导出图片失败，请重试');
+    }
+  });
 };
 
 export const exportAsExcel = () => {

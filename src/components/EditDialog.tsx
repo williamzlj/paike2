@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { X, Check } from 'lucide-react';
-import { Grade, Subject, ALL_GRADES } from '../types';
+import { Grade, Subject, ELEMENTARY_GRADES, JUNIOR_GRADES, SENIOR_GRADES } from '../types';
 import { useScheduleStore } from '../store/scheduleStore';
 
 interface EditDialogProps {
@@ -30,8 +30,13 @@ const EditDialog = ({
   const [customText, setCustomText] = useState(initialCustomText);
 
   const subjects = useScheduleStore((state) => state.subjects);
+  const showElementary = useScheduleStore((state) => state.showElementary);
 
   if (!isOpen) return null;
+
+  const visibleGradeGroups = showElementary
+    ? [ELEMENTARY_GRADES, JUNIOR_GRADES, SENIOR_GRADES]
+    : [JUNIOR_GRADES, SENIOR_GRADES];
 
   const handleSave = () => {
     if (entryType === 'course' && selectedGrade && selectedSubject) {
@@ -91,18 +96,25 @@ const EditDialog = ({
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">选择年级</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {ALL_GRADES.map((grade) => (
-                    <button
-                      key={grade}
-                      onClick={() => setSelectedGrade(selectedGrade === grade ? null : grade)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                        selectedGrade === grade
-                          ? 'bg-green-500 text-white shadow-md'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {grade}
-                    </button>
+                  {visibleGradeGroups.map((group, groupIndex) => (
+                    <Fragment key={groupIndex}>
+                      {groupIndex > 0 && (
+                        <div className="col-span-full h-px bg-gray-200 my-1" />
+                      )}
+                      {group.map((grade) => (
+                        <button
+                          key={grade}
+                          onClick={() => setSelectedGrade(selectedGrade === grade ? null : grade)}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            selectedGrade === grade
+                              ? 'bg-green-500 text-white shadow-md'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {grade}
+                        </button>
+                      ))}
+                    </Fragment>
                   ))}
                 </div>
               </div>

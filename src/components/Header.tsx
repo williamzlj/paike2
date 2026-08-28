@@ -3,7 +3,7 @@ import { Pencil, Save } from 'lucide-react';
 import { useScheduleStore } from '../store/scheduleStore';
 
 const Header = () => {
-  const { title, subtitle, setTitle, setSubtitle, hidePlaceholders } = useScheduleStore();
+  const { title, subtitle, setTitle, setSubtitle, hidePlaceholders, tableSettings } = useScheduleStore();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingSubtitle, setIsEditingSubtitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(title);
@@ -29,7 +29,8 @@ const Header = () => {
                 type="text"
                 value={editedTitle}
                 onChange={(e) => setEditedTitle(e.target.value)}
-                className="text-2xl md:text-3xl font-bold text-gray-800 bg-white border border-amber-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 max-w-lg"
+                style={{ fontSize: `${tableSettings.titleFontSize}px` }}
+                className="font-bold text-gray-800 bg-white border border-amber-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 max-w-lg"
                 autoFocus
               />
               <button
@@ -41,7 +42,7 @@ const Header = () => {
             </div>
           ) : (
             <div className="flex items-center justify-center gap-3">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+              <h1 className="font-bold text-gray-800" style={{ fontSize: `${tableSettings.titleFontSize}px` }}>
                 {title}
               </h1>
               {!hidePlaceholders && (
@@ -66,7 +67,8 @@ const Header = () => {
                 value={editedSubtitle}
                 onChange={(e) => setEditedSubtitle(e.target.value)}
                 placeholder="输入小标题..."
-                className="text-xl text-gray-600 bg-white border border-amber-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-amber-400 max-w-md w-64"
+                style={{ fontSize: `${tableSettings.subtitleFontSize}px` }}
+                className="text-gray-600 bg-white border border-amber-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-amber-400 max-w-md w-64"
                 autoFocus
               />
               <button
@@ -79,9 +81,9 @@ const Header = () => {
           ) : (
             <div className="flex items-center justify-center gap-2">
               {subtitle ? (
-                <span className="text-xl text-gray-500">{subtitle}</span>
+                <span className="text-gray-500" style={{ fontSize: `${tableSettings.subtitleFontSize}px` }}>{subtitle}</span>
               ) : (
-                !hidePlaceholders && <span className="text-xl text-gray-400 italic">点击添加小标题</span>
+                !hidePlaceholders && <span className="text-gray-400 italic" style={{ fontSize: `${tableSettings.subtitleFontSize}px` }}>点击添加小标题</span>
               )}
               {!hidePlaceholders && (
                 <button
